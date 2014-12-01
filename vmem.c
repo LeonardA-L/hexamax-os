@@ -8,3 +8,9 @@
 
 #define	SECTION_SIZE	(SECON_LVL_TT_COUN * PAGE_SIZE)		// 
 #define TOTAL_TT_SIZE	(FIRST_LVL_TT_SIZE + SECON_LVL_TT_SIZE * FIRST_LVL_TT_COUN)			// 42Mo
+
+#define PAGE_TABLE_START_ADDR	0x48001
+
+unsigned int init_kern_translation_table(void){
+	//for(void* p = 0x0; p<0x50000
+}
