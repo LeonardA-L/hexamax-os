@@ -1,14 +1,13 @@
 #include "syscall.h"
 
-#define SIG_REBOOT 1
-
 void __attribute__ ((naked)) SWIHandler ()
 {
 	int param;
 	__asm("r0 %0" : : "r"param);
+	
 	switch (param)
 	{
-	  case SIG_REBOOT :
+	  case REBOOT :
 		doSysCallReboot();
 		break;
 	}
