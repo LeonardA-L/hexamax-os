@@ -1,5 +1,6 @@
 #include "sched.h"
 #include "hw.h";
+#include "syscall.h";
 
 void
 funcA()
@@ -7,7 +8,6 @@ funcA()
 	int cptA = 0;
 	while ( 1 ) {
 		cptA ++;
-		//ctx_switch();
 	}
 }
 
@@ -16,13 +16,12 @@ void
 funcB()
 {
 	int cptB = 1;
-	while ( 1 ) {
+	while ( cptB < 20 ) {
 		cptB += 2 ;
-		//ctx_switch();
 	}
-	//sched_exit();
+	doSysCall(REBOOT);
+	sched_exit();
 }
-
 
 //------------------------------------------------------------------------
 int
