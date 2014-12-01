@@ -1,0 +1,5 @@
+*.o
+kernel.elf
+kernel.hex
+kernel.img
+kernel.list

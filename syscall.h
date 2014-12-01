@@ -5,7 +5,8 @@ enum SYSCALL {
 	REBOOT, READ
 };
 
-void doSysCall(SYSCALL index);
+void doSysCall(enum SYSCALL index);
+void doSysCallReboot ();
 
 void __attribute__ ((naked)) SWIHandler ();
 

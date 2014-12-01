@@ -1,6 +1,6 @@
 #include "sched.h"
-#include "hw.h";
-#include "syscall.h";
+#include "hw.h"
+#include "syscall.h"
 
 void
 funcA()
@@ -19,7 +19,8 @@ funcB()
 	while ( cptB < 20 ) {
 		cptB += 2 ;
 	}
-	doSysCall(REBOOT);
+	enum SYSCALL reboot = REBOOT;
+	doSysCall(reboot);
 	sched_exit();
 }
 

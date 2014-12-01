@@ -3,7 +3,7 @@
 void __attribute__ ((naked)) SWIHandler ()
 {
 	int param;
-	__asm("r0 %0" : : "r"param);
+	__asm("mov r0, %0" : : "r"(param));
 	
 	switch (param)
 	{
@@ -13,7 +13,7 @@ void __attribute__ ((naked)) SWIHandler ()
 	}
 }
 
-void doSysCall(SYSCALL index) {
+void doSysCall(enum SYSCALL index) {
 	// on stocke le numéro de l'appel système à executer
 	__asm("mov r0, %0" : : "r"(index) : "r0");
 	// SoftWare Interupt
