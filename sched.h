@@ -24,9 +24,11 @@ struct pcb_s {
 	void* sp;				// a saved value of the process' sp
 	void* lr;				// a saved value of the process' lr
 	enum pState state;		// The state of the process
+	unsigned int waitCounter;	// nb call this proc
 	struct pcb_s* next;		// The next process in the chained list
 };
 
+void __attribute__ ((naked)) ctx_switch_from_irq();
 void __attribute__ ((naked)) ctx_switch();
 
 void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp);

@@ -2,25 +2,54 @@
 
 void __attribute__ ((naked)) SWIHandler ()
 {
-	int param;
-	__asm("mov r0, %0" : : "r"(param));
+	int function;
+	__asm("mov %0, r0" : "=r"(function));
 	
-	switch (param)
+	switch (function)
 	{
-	  case REBOOT :
-		doSysCallReboot();
+	  	case REBOOT :
+			doSysCallReboot();
+		break;
+
+		case READ :
+			doSysCallRead();
+		break;
+
+		case WAIT :
+        {
+			unsigned int param;
+			__asm("mov %0, r1" : "=r"(param));
+			doSysCallWait(param);
+        }
 		break;
 	}
 }
 
-void doSysCall(enum SYSCALL index) {
+void doSysCall(enum SYSCALL index, unsigned int param) {
 	// on stocke le numéro de l'appel système à executer
-	__asm("mov r0, %0" : : "r"(index) : "r0");
+	__asm("mov r0, %0" : : "r"(index));
+
+	if (param != 0x0) {
+		__asm("mov r1, %0" : : "r"(param));
+	}
+
 	// SoftWare Interupt
 	__asm("SWI 0" : : : "lr");
 }
 
+void doSysCallRead () {
+	// sys_wait();
+}
+
+void doSysCallWait (unsigned int param) {
+	sys_wait(param);
+}
+
 void doSysCallReboot () {
+	sys_reboot();
+}
+
+void sys_reboot() {
 	const int PM_RSTC = 0x2010001c;
 	const int PM_WDOG = 0x20100024;
 	const int PM_PASSWORD = 0x5a000000;
@@ -30,4 +59,8 @@ void doSysCallReboot () {
 	PUT32(PM_RSTC, PM_PASSWORD | PM_RSTC_WRCFG_FULL_RESET);
 
 	while (1);
+}
+
+void sys_wait (unsigned int nbQuantums) {
+    // appeler le scheduler : changer l'état du process => WAITING + switch
 }

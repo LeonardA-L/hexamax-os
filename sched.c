@@ -42,6 +42,7 @@ void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp){
 	pcb->sp = sp;
 	pcb->arg = arg;
 	pcb->state = NEW;
+	pcb->waitCounter = 0;
 }
 
 void sched_exit(){
@@ -91,6 +92,16 @@ void elect(){
 		terminate_process(current_process->next);
 	}
 	current_process = current_process->next;			// Elect a new process (i.e the next in the list)
+
+	while(current_process->state == WAITING){
+		(current_process->waitCounter)--;
+		if (current_process->waitCounter == 0) {
+			current_process->state = READY;
+		}
+		else {
+			current_process = current_process->next;
+		}
+	}
 }
 
 
