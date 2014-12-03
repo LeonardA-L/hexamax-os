@@ -5,6 +5,8 @@
 #define STACK_SIZE	2000
 #define REGISTERS_SIZE	56
 #define	NULL	0x0
+#define LOW_PRIORITY 19
+#define HIGH_PRIORITY (-20)
 
 
 
@@ -25,11 +27,12 @@ struct pcb_s {
 	void* lr;				// a saved value of the process' lr
 	enum pState state;		// The state of the process
 	struct pcb_s* next;		// The next process in the chained list
+	int priority;			//priority (for fixed-priority scheduler; ranges from -20 to +19)
 };
 
 void __attribute__ ((naked)) ctx_switch();
 
-void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp);
+void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio);
 void create_process(func_t f, void* args, unsigned int stack_size);
 
 void start_sched();
