@@ -29,7 +29,7 @@ funcB()
 int
 kmain ( void )
 {
-	(void) init_kern_translation_table();
+	init_mem();
 	
 	init_hw();
 	create_process(funcB, NULL, STACK_SIZE);
