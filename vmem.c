@@ -1,3 +1,5 @@
+#include "vmem.h"
+
 #define PAGE_SIZE	4096
 
 #define	SECON_LVL_TT_COUN	256		// Second level page indexes are stored on 8b
@@ -12,25 +14,33 @@
 #define PAGE_TABLE_START_ADDR	(0x48000)
 #define SECOND_TABLE_START_ADDR (PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE)
 
-void* computePageAddr(int first_level_idx, int second_level_idx){
-	return (i<<20)+(j<<12);
+uint32_t computePageAddr(int first_level_idx, int second_level_idx){
+	return (first_level_idx<<20)+(second_level_idx<<12);
 }
 
 
 unsigned int init_kern_translation_table(void){
 	uint32_t device_flags = 0b00000111111;
-	uint32_t t1_flags = 0b;
+	/*
+	Domain : 0 (Large page address : useless on raspPi)
+	P : 0 (??)
+	SBZ : Should Be Zero
+	NS : right in the middle of SBZ field on ARM doc
+	 */
+	uint32_t t1_flags = 0b0000001;
 	// Init first level tables
 	int i=0;
-	for(uint32_t* p = PAGE_TABLE_START_ADDR; p<(PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE);p++)
+	uint32_t* p;
+	for(p = (uint32_t*)PAGE_TABLE_START_ADDR; p< (uint32_t*)(PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE);p++)
 	{
 		// Init second level tables
 		int j=0;
-		for(uint32_t* q=SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE; q<(SECOND_TABLE_START_ADDR + (i+1)*SECON_LVL_TT_SIZE); q++)
+		uint32_t* q;
+		for(q= (uint32_t*)SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE; q< (uint32_t*)(SECOND_TABLE_START_ADDR + (i+1)*SECON_LVL_TT_SIZE); q++)
 		{
 			
 			// Add entry to second level table
-			void* page_addr = computePageAddr(i,j);
+			uint32_t page_addr = computePageAddr(i,j);
 			if(page_addr < 0x500000)
 			{
 				*q = page_addr | 0b00000111110; 	// same as devices for the moment
@@ -42,13 +52,15 @@ unsigned int init_kern_translation_table(void){
 			else
 			{
 				// Translation fault
-				*q = Ob00;
+				*q = 0;
 			}
 			j++;
 		}
 		
 		// Add entry to first level table
-		p = (SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE) | t1_flags;
+		*p = (uint32_t)((SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE) | t1_flags);
 		i++;
 	}
+	
+	return 0;
 }

@@ -1,5 +1,6 @@
 #include "sched.h"
-#include "hw.h";
+#include "hw.h"
+#include "vmem.h"
 
 void
 funcA()
@@ -28,6 +29,8 @@ funcB()
 int
 kmain ( void )
 {
+	(void) init_kern_translation_table();
+	
 	init_hw();
 	create_process(funcB, NULL, STACK_SIZE);
 	create_process(funcA, NULL, STACK_SIZE);
