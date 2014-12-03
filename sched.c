@@ -13,7 +13,6 @@ void save_elect_restore(){
 		__asm("mov %0, sp" : "=r"(current_process->sp));
 		__asm("mov %0, lr" : "=r"(current_process->lr));
 	
-	
 		current_process->state = WAITING;
 	}
 	
@@ -30,7 +29,6 @@ void save_elect_restore(){
 void __attribute__ ((naked)) ctx_switch()
 {
 	save_elect_restore();
-	
 	start_current_process();
 	
 }
@@ -96,7 +94,13 @@ void elect(){
 	while(current_process->state == WAITING){
 		(current_process->waitCounter)--;
 		if (current_process->waitCounter == 0) {
+			current_process->waitCounter = 0;
 			current_process->state = READY;
+			break;
+		}
+		else if (current_process->waitCounter == -1) {
+			current_process->waitCounter = 0;
+			break;
 		}
 		else {
 			current_process = current_process->next;
@@ -104,20 +108,24 @@ void elect(){
 	}
 }
 
+void waitAndSwitch(unsigned int nbQuantum) {
+	current_process->waitCounter = nbQuantum;
+	ctx_switch_from_syscall();
+}
+
 
 void __attribute__ ((naked)) ctx_switch_from_irq(){
 	DISABLE_IRQ();
 	
-	
 	__asm("sub lr, lr, #4");
 	__asm("srsdb sp!, #0x13");
+	__asm("mov %0, lr" : "=r"(current_process->lr));
 	__asm("cps #0x13");
 	
 	// Stack
 	__asm("push {r0-r12}");
 	// Store sp and lr
 	__asm("mov %0, sp" : "=r"(current_process->sp));
-	__asm("mov %0, lr" : "=r"(current_process->lr));
 	
 	current_process->state = WAITING;
 	
@@ -151,6 +159,38 @@ void __attribute__ ((naked)) ctx_switch_from_irq(){
 	// Enable IRQ ??
 }
 
+void __attribute__ ((naked)) ctx_switch_from_syscall() {
+	DISABLE_IRQ();
+	
+	// Stack
+	__asm("push {r0-r12}");
+	// Store sp and lr
+	__asm("mov %0, sp" : "=r"(current_process->sp));
+	__asm("mov %0, lr" : "=r"(current_process->lr));
+	
+	current_process->state = WAITING;
+	
+	elect();
+	
+	// Restore sp
+	__asm("mov sp, %0" : : "r"(current_process->sp));
+	// Destack
+	__asm("pop {r0-r12}");
+	
+	
+	set_tick_and_enable_timer();
+	ENABLE_IRQ();
+	
+	if(current_process->state == READY){
+		current_process->state = RUNNING;
+		__asm("bx %0" : : "r"(current_process->lr));		// Goto current process' lr
+	}
+	else{
+		start_current_process();
+	}
+	
+}
+
 
 void start_sched(){
 	// Loop the chained list of process
@@ -166,13 +206,4 @@ void start_sched(){
 	
 	ENABLE_IRQ();
 	set_tick_and_enable_timer();
-	
-	/*
-	elect();
-	// Restore sp
-	__asm("mov sp, %0" : : "r"(current_process->sp));
-	// Destack
-	__asm("pop {r0-r12}");
-	start_current_process();
-	*/
 }

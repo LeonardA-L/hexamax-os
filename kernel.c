@@ -8,6 +8,10 @@ funcA()
 	int cptA = 0;
 	while ( 1 ) {
 		cptA ++;
+		if (cptA%10 == 0) {
+			enum SYSCALL wait = WAIT;
+			doSysCall(wait, 3);
+		}
 	}
 }
 
@@ -16,11 +20,11 @@ void
 funcB()
 {
 	int cptB = 1;
-	while ( cptB < 20 ) {
+	while ( 1 ) {
 		cptB += 2 ;
 	}
-	enum SYSCALL reboot = REBOOT;
-	doSysCall(reboot);
+	//enum SYSCALL reboot = REBOOT;
+	//doSysCall(reboot, NULL);
 	sched_exit();
 }
 

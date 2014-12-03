@@ -2,16 +2,16 @@
 #define SYSCALL_H
 
 enum SYSCALL {
-	REBOOT, READ, WAIT
+	REBOOT, WAIT
 };
 
-void doSysCall(enum SYSCALL index, unsigned int param);
-void doSysCallReboot ();
-void doSysCallRead ();
-void doSysCallWait (unsigned int param); // params nbQuantums to add
+void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param);
 
-void sys_reboot();
-void sys_wait(unsigned int nbQuantums);
+void __attribute__ ((naked)) doSysCallReboot ();
+void __attribute__ ((naked)) doSysCallWait (unsigned int param); // params nbQuantums to add
+
+void __attribute__ ((naked)) sys_reboot();
+void __attribute__ ((naked)) sys_wait(unsigned int nbQuantums);
 
 void __attribute__ ((naked)) SWIHandler ();
 

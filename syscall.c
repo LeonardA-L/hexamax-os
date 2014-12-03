@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "sched.h"
 
 void __attribute__ ((naked)) SWIHandler ()
 {
@@ -11,10 +12,6 @@ void __attribute__ ((naked)) SWIHandler ()
 			doSysCallReboot();
 		break;
 
-		case READ :
-			doSysCallRead();
-		break;
-
 		case WAIT :
         {
 			unsigned int param;
@@ -25,7 +22,7 @@ void __attribute__ ((naked)) SWIHandler ()
 	}
 }
 
-void doSysCall(enum SYSCALL index, unsigned int param) {
+void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 	// on stocke le numéro de l'appel système à executer
 	__asm("mov r0, %0" : : "r"(index));
 
@@ -37,19 +34,19 @@ void doSysCall(enum SYSCALL index, unsigned int param) {
 	__asm("SWI 0" : : : "lr");
 }
 
-void doSysCallRead () {
-	// sys_wait();
-}
+
 
 void doSysCallWait (unsigned int param) {
 	sys_wait(param);
 }
 
-void doSysCallReboot () {
+void __attribute__ ((naked)) doSysCallReboot () {
 	sys_reboot();
 }
 
-void sys_reboot() {
+
+
+void __attribute__ ((naked)) sys_reboot() {
 	const int PM_RSTC = 0x2010001c;
 	const int PM_WDOG = 0x20100024;
 	const int PM_PASSWORD = 0x5a000000;
@@ -63,4 +60,5 @@ void sys_reboot() {
 
 void sys_wait (unsigned int nbQuantums) {
     // appeler le scheduler : changer l'état du process => WAITING + switch
+	waitAndSwitch(nbQuantums);
 }
