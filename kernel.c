@@ -4,7 +4,7 @@
 
 void
 funcA()
-{
+{/*
 	int cptA = 0;
 	int waitDone = 0;
 	while ( 1 ) {
@@ -14,7 +14,14 @@ funcA()
 			doSysCall(wait, 3);
 			waitDone = 1;
 		}
+	}*/
+	int cptA = 1;
+	while ( cptA < 3 ) {
+		cptA ++;
 	}
+	enum SYSCALL wait = WAIT;
+	doSysCall(wait, 3);
+	sched_exit();
 }
 
 

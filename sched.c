@@ -6,10 +6,12 @@ struct pcb_s* current_process;
 struct pcb_s* first_process;
 struct pcb_s* init_process;
 int highest_priority; //retains the highest priority of the currently running processes
+unsigned long clockTicks;
 
 void init_sched()
 {
 	highest_priority = LOW_PRIORITY;
+	clockTicks = 0;
 }
 
 void save_elect_restore(){
@@ -20,12 +22,12 @@ void save_elect_restore(){
 		__asm("mov %0, sp" : "=r"(current_process->sp));
 		__asm("mov %0, lr" : "=r"(current_process->lr));
 	
-		current_process->state = WAITING;
+		current_process->state = WAITING; // to change
 	}
 	
 	elect();
 	
-	current_process->state = RUNNING;
+	current_process->state = RUNNING; // to change
 	
 	// Restore sp
 	__asm("mov sp, %0" : : "r"(current_process->sp));
@@ -117,9 +119,21 @@ void elect_with_fixed_priority(){
 			terminate_process(current_process->next);
 		}
 		current_process = current_process->next;
-		if (current_process->priority == highest_priority) {
-			break;
+
+		if (current_process->state == WAITING)
+		{
+			if (current_process->waitCounter < clockTicks) // or <=
+			{
+				current_process->state = READY;
+				break;
+			}
 		}
+		/* A METTRE AU BON ENDROIT !! test wait PUIS priorité
+		if (current_process->priority == highest_priority) {
+			if (current_process->state == READY) {
+				break;
+			}
+		}*/
 	}
 }
 
@@ -147,13 +161,18 @@ void elect_with_wait() {
 }
 
 void elect() {
-	elect_with_wait();
+	elect_with_fixed_priority();
 }
 
 void waitAndSwitch(unsigned int nbQuantum) {
-	current_process->waitCounter = nbQuantum;
+	current_process->waitCounter = clockTicks+nbQuantum;//nbQuantum;
 	ctx_switch_from_syscall();
 }
+
+//void wakeProc()
+//{
+//	
+//}
 
 
 void __attribute__ ((naked)) ctx_switch_from_irq(){
@@ -169,8 +188,11 @@ void __attribute__ ((naked)) ctx_switch_from_irq(){
 	// Store sp and lr
 	__asm("mov %0, sp" : "=r"(current_process->sp));
 	
-	current_process->state = WAITING;
+	current_process->state = WAITING; // to change
 	
+	clockTicks++;
+	
+	//wakeProc();
 	elect();
 	
 	// Restore sp
@@ -210,7 +232,7 @@ void __attribute__ ((naked)) ctx_switch_from_syscall() {
 	__asm("mov %0, sp" : "=r"(current_process->sp));
 	__asm("mov %0, lr" : "=r"(current_process->lr));
 	
-	current_process->state = WAITING;
+	current_process->state = WAITING; // to change
 	
 	elect();
 	

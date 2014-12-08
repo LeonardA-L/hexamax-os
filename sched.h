@@ -25,7 +25,7 @@ struct pcb_s {
 	void* sp;				// a saved value of the process' sp
 	void* lr;				// a saved value of the process' lr
 	enum pState state;		// The state of the process
-	int waitCounter;	// nb call this proc
+	unsigned long waitCounter;	// nb call this proc
 	struct pcb_s* next;		// The next process in the chained list
 	int priority;			//priority (for fixed-priority scheduler; ranges from -20 to +19)
 };
