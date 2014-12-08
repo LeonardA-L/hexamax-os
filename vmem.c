@@ -14,6 +14,9 @@
 #define PAGE_TABLE_START_ADDR	(0x48000)
 #define SECOND_TABLE_START_ADDR (PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE)
 
+// #define OCCUPATION_TABLE_START_ADDR	(SECOND_TABLE_START_ADDR + (FIRST_LVL_TT_COUN+1)*SECON_LVL_TT_SIZE)
+#define OCCUPATION_TABLE_START_ADDR	 (TOTAL_TT_SIZE + PAGE_TABLE_START_ADDR)
+#define OCCUPATION_TABLE_SIZE	(131072)
 
 
 void start_mmu_C()
@@ -97,10 +100,61 @@ unsigned int init_kern_translation_table(void){
 	return 0;
 }
 
-void init_mem()
+void init_occupation_table(){
+	uint8_t* q;
+	int i=0;
+	for(q= (uint8_t*)OCCUPATION_TABLE_START_ADDR;; q< (uint8_t*)(OCCUPATION_TABLE_START_ADDR + OCCUPATION_TABLE_SIZE); q++)
+	{
+		if(i<1133){	// address of the last occupied frame at init
+			*q = 1;
+		}
+		else{
+			*q = 0;
+		}
+		i++;
+	}
+	
+}
+
+void* vMem_alloc(unsigned int nbPages)
 {
-	(void) init_kern_translation_table();
+	uint8_t* q;
+	int j = 0;
+	uint8_t* segment = 0;
+	int page_number = 0;
+	int i=0;
+	for(q= (uint8_t*)OCCUPATION_TABLE_START_ADDR; q< (uint8_t*)(OCCUPATION_TABLE_START_ADDR + OCCUPATION_TABLE_SIZE); q++)
+	{
+		if(*q == 0){
+			j++;
+		}
+		else{
+			j=0;
+		}
+		
+		if(j== nbPages){
+			segment = q-nbPages;
+			page_number = i-nbPages;
+			break;
+		}
+		i++;
+	}
+	
+	if(segment == 0) return (void*)0;
+	
+	for(q = segment;q<segment+nbPages;q++){
+		*q = 1;
+	}
+	
+	return (void*)(page_number*4096);
+}
+
+void init_mem()
+{	
+	void* alloc;
+	init_kern_translation_table();
+	init_occupation_table();
 	configure_mmu_C();
 	start_mmu_C();
-	
+	alloc = vMem_alloc(4);
 }
