@@ -112,7 +112,7 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 	((struct pcb_s*)newPcb)->state = READY;
 }
 
-void create_process_dynamicaly (func_t f, void* args, unsigned int stack_size, int priority)
+void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority)
 {
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
 	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);

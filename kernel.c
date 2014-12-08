@@ -21,7 +21,7 @@ funcA()
 		if (!waitDone && cptA%10 == 0) {
 			enum SYSCALL wait = WAIT;
 			doSysCall(wait, 3);
-			create_process_dynamicaly (funcC, NULL, STACK_SIZE, 0);
+			create_process_dynamically (funcC, NULL, STACK_SIZE, 0);
 			waitDone = 1;
 		}
 	}
