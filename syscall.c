@@ -3,6 +3,10 @@
 
 void __attribute__ ((naked)) SWIHandler ()
 {
+
+	__asm("srsdb sp!, #0x13");
+	__asm("cps #0x13");
+
 	int function;
 	__asm("mov %0, r0" : "=r"(function));
 	
@@ -20,9 +24,14 @@ void __attribute__ ((naked)) SWIHandler ()
         }
 		break;
 	}
+	__asm("rfeia sp!");
 }
 
 void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
+
+	__asm("srsdb sp!, #0x13");
+	__asm("cps #0x13");
+
 	// on stocke le numéro de l'appel système à executer
 	__asm("mov r0, %0" : : "r"(index));
 
@@ -32,6 +41,8 @@ void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 
 	// SoftWare Interupt
 	__asm("SWI 0" : : : "lr");
+
+	__asm("rfeia sp!");
 }
 
 

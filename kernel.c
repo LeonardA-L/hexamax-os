@@ -6,11 +6,13 @@ void
 funcA()
 {
 	int cptA = 0;
+	int waitDone = 0;
 	while ( 1 ) {
 		cptA ++;
-		if (cptA%10 == 0) {
+		if (!waitDone && cptA%10 == 0) {
 			enum SYSCALL wait = WAIT;
 			doSysCall(wait, 3);
+			waitDone = 1;
 		}
 	}
 }

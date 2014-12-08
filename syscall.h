@@ -8,10 +8,10 @@ enum SYSCALL {
 void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param);
 
 void __attribute__ ((naked)) doSysCallReboot ();
-void __attribute__ ((naked)) doSysCallWait (unsigned int param); // params nbQuantums to add
+void doSysCallWait (unsigned int param); // params nbQuantums to add
 
 void __attribute__ ((naked)) sys_reboot();
-void __attribute__ ((naked)) sys_wait(unsigned int nbQuantums);
+void sys_wait(unsigned int nbQuantums);
 
 void __attribute__ ((naked)) SWIHandler ();
 
