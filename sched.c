@@ -12,7 +12,8 @@ void init_sched()
 	highest_priority = LOW_PRIORITY;
 }
 
-void save_elect_restore(){
+void save_elect_restore()
+{
 	if(current_process->state != TERMINATED){
 		// Stack
 		__asm("push {r0-r12}");
@@ -40,7 +41,8 @@ void __attribute__ ((naked)) ctx_switch()
 	
 }
 
-void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio){
+void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio)
+{
 	// init pcb's variables
 	pcb->lr = f;
 	pcb->function = f;
@@ -56,13 +58,15 @@ void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio
 	}
 }
 
-void sched_exit(){
+void sched_exit()
+{
 	current_process -> state = TERMINATED;
 	//ctx_switch();
 	elect();
 }
 
-void terminate_process(struct pcb_s* pcb){
+void terminate_process(struct pcb_s* pcb)
+{
 	// Unalloc
 	phyAlloc_free(pcb->sp -(STACK_SIZE-REGISTERS_SIZE-1), STACK_SIZE);		// Unalloc stack by reshifting its pointer to the original value
 	phyAlloc_free(pcb, sizeof(struct pcb_s));								// Unalloc pcb's memory
@@ -79,7 +83,8 @@ void terminate_process(struct pcb_s* pcb){
 	p->next = pcb->next;
 }
 
-void create_process(func_t f, void* args, unsigned int stack_size, int priority){
+void create_process(func_t f, void* args, unsigned int stack_size, int priority)
+{
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
 	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
 	
@@ -107,7 +112,32 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 	((struct pcb_s*)newPcb)->state = READY;
 }
 
-void start_current_process(){
+void create_process_dynamicaly (func_t f, void* args, unsigned int stack_size, int priority)
+{
+	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
+	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
+	
+	//struct pcb_s newPcb;
+	int sizePcb = sizeof(struct pcb_s);
+	void* newPcb = phyAlloc_alloc(sizePcb);
+	
+	if(priority < highest_priority)
+	{
+		highest_priority = priority;
+	}
+	
+	//TODO :parse the PCB list for individual processes priority and insert the newly created process in the list
+	struct pcb_s* p;		
+	for(p = current_process; p->next != current_process; p = p->next);
+	p->next = newPcb;
+
+	init_pcb(newPcb, f, args, newStack, priority);
+	((struct pcb_s*)newPcb)->next = current_process;
+	((struct pcb_s*)newPcb)->state = READY;
+}
+
+void start_current_process()
+{
 	__asm("bx %0" : : "r"(current_process->lr));		// Goto current process' lr
 }
 
@@ -123,7 +153,8 @@ void elect_with_fixed_priority(){
 	}
 }
 
-void elect_with_wait() {
+void elect_with_wait()
+{
 	if (current_process->next->state == TERMINATED) {
 		terminate_process(current_process->next);
 	}
@@ -146,17 +177,20 @@ void elect_with_wait() {
 	}
 }
 
-void elect() {
+void elect()
+{
 	elect_with_wait();
 }
 
-void waitAndSwitch(unsigned int nbQuantum) {
+void waitAndSwitch(unsigned int nbQuantum)
+{
 	current_process->waitCounter = nbQuantum;
 	ctx_switch_from_syscall();
 }
 
 
-void __attribute__ ((naked)) ctx_switch_from_irq(){
+void __attribute__ ((naked)) ctx_switch_from_irq()
+{
 	DISABLE_IRQ();
 	
 	__asm("sub lr, lr, #4");
@@ -201,7 +235,8 @@ void __attribute__ ((naked)) ctx_switch_from_irq(){
 	// Enable IRQ ??
 }
 
-void __attribute__ ((naked)) ctx_switch_from_syscall() {
+void __attribute__ ((naked)) ctx_switch_from_syscall()
+{
 	DISABLE_IRQ();
 	
 	// Stack
@@ -234,7 +269,8 @@ void __attribute__ ((naked)) ctx_switch_from_syscall() {
 }
 
 
-void start_sched(){
+void start_sched()
+{
 	// Loop the chained list of process
 	struct pcb_s* p;
 	for(p = first_process; p->next != NULL; p = p->next);

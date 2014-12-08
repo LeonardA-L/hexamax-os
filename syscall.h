@@ -2,7 +2,7 @@
 #define SYSCALL_H
 
 enum SYSCALL {
-	REBOOT, WAIT
+	REBOOT, WAIT, FORK
 };
 
 void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param);
