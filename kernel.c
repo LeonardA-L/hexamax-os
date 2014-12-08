@@ -35,8 +35,9 @@ int
 kmain ( void )
 {
 	init_hw();
-	create_process(funcB, NULL, STACK_SIZE);
-	create_process(funcA, NULL, STACK_SIZE);
+	init_sched();
+	create_process(funcB, NULL, STACK_SIZE, 1);
+	create_process(funcA, NULL, STACK_SIZE, 0);
 	start_sched();
 	while(1);
 	/* Pas atteignable vues nos 2 fonctions */

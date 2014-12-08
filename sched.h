@@ -1,10 +1,11 @@
-
 #ifndef	SCHED_H
 #define SCHED_H
 
 #define STACK_SIZE	2000
 #define REGISTERS_SIZE	56
 #define	NULL	0x0
+#define LOW_PRIORITY 19
+#define HIGH_PRIORITY (-20)
 
 
 
@@ -26,6 +27,7 @@ struct pcb_s {
 	enum pState state;		// The state of the process
 	int waitCounter;	// nb call this proc
 	struct pcb_s* next;		// The next process in the chained list
+	int priority;			//priority (for fixed-priority scheduler; ranges from -20 to +19)
 };
 
 void __attribute__ ((naked)) ctx_switch_from_irq();
@@ -33,8 +35,13 @@ void __attribute__ ((naked)) ctx_switch_from_syscall();
 void __attribute__ ((naked)) ctx_switch();
 void waitAndSwitch(unsigned int nbQuantum);
 
-void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp);
-void create_process(func_t f, void* args, unsigned int stack_size);
+void init_sched();
+void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio);
+void create_process(func_t f, void* args, unsigned int stack_size, int priority);
+
+void elect();
+void elect_with_wait();
+void elect_with_fixed_priority();
 
 void start_sched();
 
