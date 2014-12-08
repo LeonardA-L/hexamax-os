@@ -51,18 +51,29 @@ void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 }
 
 
+// ----------
+
+
+void doSysCallReboot ()
+{
+	sys_reboot();
+}
 
 void doSysCallWait (unsigned int param) {
 	sys_wait(param);
 }
 
-void __attribute__ ((naked)) doSysCallReboot () {
-	sys_reboot();
+void doSysCallFork()
+{
+	sys_fork();
 }
 
 
+// -----------
 
-void __attribute__ ((naked)) sys_reboot() {
+
+void sys_reboot()
+{
 	const int PM_RSTC = 0x2010001c;
 	const int PM_WDOG = 0x20100024;
 	const int PM_PASSWORD = 0x5a000000;
@@ -74,7 +85,13 @@ void __attribute__ ((naked)) sys_reboot() {
 	while (1);
 }
 
-void sys_wait (unsigned int nbQuantums) {
+void sys_wait (unsigned int nbQuantums)
+{
     // appeler le scheduler : changer l'état du process => WAITING + switch
 	waitAndSwitch(nbQuantums);
+}
+
+void sys_fork()
+{
+
 }

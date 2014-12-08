@@ -1,0 +1,2 @@
+change create_process_dynamically() or create new function to copy stack from the former process into the new one
+implement sys_fork() with create_process_dynamically()
