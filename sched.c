@@ -1,9 +1,16 @@
 #include "sched.h"
 #include "hw.h"
 
+
 struct pcb_s* current_process;
 struct pcb_s* first_process;
 struct pcb_s* init_process;
+int highest_priority; //retains the highest priority of the currently running processes
+
+void init_sched()
+{
+	highest_priority = LOW_PRIORITY;
+}
 
 void save_elect_restore(){
 	if(current_process->state != TERMINATED){
@@ -35,18 +42,25 @@ void __attribute__ ((naked)) ctx_switch()
 	
 }
 
-void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp){
+void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio){
 	// init pcb's variables
 	pcb->lr = f;
 	pcb->function = f;
 	pcb->sp = sp;
 	pcb->arg = arg;
 	pcb->state = NEW;
+	if(prio < HIGH_PRIORITY || prio > LOW_PRIORITY) {
+		pcb->priority = LOW_PRIORITY;
+	}
+	else {
+		pcb->priority = prio;
+	}
 }
 
 void sched_exit(){
 	current_process -> state = TERMINATED;
-	ctx_switch();
+	//ctx_switch();
+	elect();
 }
 
 void terminate_process(struct pcb_s* pcb){
@@ -54,12 +68,19 @@ void terminate_process(struct pcb_s* pcb){
 	phyAlloc_free(pcb->sp -(STACK_SIZE-REGISTERS_SIZE-1), STACK_SIZE);		// Unalloc stack by reshifting its pointer to the original value
 	phyAlloc_free(pcb, sizeof(struct pcb_s));								// Unalloc pcb's memory
 	// Reloop
+	int highestPrio = LOW_PRIORITY;
 	struct pcb_s* p;
-	for(p = pcb; p->next != pcb; p = p->next);
+	for(p = pcb; p->next != pcb; p = p->next)
+	{
+		if (highestPrio>p->priority) {
+			highestPrio = p->priority;
+		}
+	}
+	highest_priority=highestPrio;
 	p->next = pcb->next;
 }
 
-void create_process(func_t f, void* args, unsigned int stack_size){
+void create_process(func_t f, void* args, unsigned int stack_size, int priority){
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
 	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
 	
@@ -67,18 +88,23 @@ void create_process(func_t f, void* args, unsigned int stack_size){
 	int sizePcb = sizeof(struct pcb_s);
 	void* newPcb = phyAlloc_alloc(sizePcb);
 	
+	if(priority < highest_priority)
+	{
+		highest_priority = priority;
+	}
+	
 	if(first_process == NULL){
 		first_process = newPcb;
 	}
 	else{
-		
-		struct pcb_s* p;
+		//TODO :parse the PCB list for individual processes priority and insert the newly created process in the list
+		struct pcb_s* p;		
 		for(p = first_process; p->next != NULL; p = p->next);
 		p->next = newPcb;
 		
 	}
 
-	init_pcb(newPcb, f, args, newStack);
+	init_pcb(newPcb, f, args, newStack, priority);
 	((struct pcb_s*)newPcb)->state = READY;
 }
 
@@ -87,10 +113,15 @@ void start_current_process(){
 }
 
 void elect(){
-	while(current_process->next->state == TERMINATED){
-		terminate_process(current_process->next);
+	while(1) {
+		if (current_process->next->state == TERMINATED) {
+			terminate_process(current_process->next);
+		}
+		current_process = current_process->next;
+		if (current_process->priority == highest_priority) {
+			break;
+		}
 	}
-	current_process = current_process->next;			// Elect a new process (i.e the next in the list)
 }
 
 
