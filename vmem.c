@@ -21,48 +21,52 @@
 
 void start_mmu_C()
 {
-	register unsigned int control;
-	__asm("mcr p15, 0, %[zero], c1, c0, 0" : : [zero] "r"(0)); //Disable cache
-	__asm("mcr p15, 0, r0, c7, c7, 0"); //Invalidate cache (data and instructions) */
-	__asm("mcr p15, 0, r0, c8, c7, 0"); //Invalidate TLB entries
-	/* Enable ARMv6 MMU features (disable sub-page AP) */
-	control = (1<<23) | (1 << 15) | (1 << 4) | 1;
-	/* Invalidate the translation lookaside buffer (TLB) */
-	__asm volatile("mcr p15, 0, %[data], c8, c7, 0" : : [data] "r" (0));
-	/* Write control register */
-	__asm volatile("mcr p15, 0, %[control], c1, c0, 0" : : [control] "r" (control));
+    register unsigned int control;
+    __asm volatile("cpsie a");
+    __asm volatile("cpsie i");
+    
+    __asm("mcr p15, 0, %[zero], c1 , c0 , 0" : : [zero] "r" (0)); // Disable cache 
+    __asm("mcr p15, 0, r0 , c7 , c7 , 0"); // Invalidate cache (  data and instructions ) */
+    __asm("mcr p15, 0, r0 , c8 , c7 , 0"); // Invalidate TLB entries
+    
+    __asm volatile("mrc p15, 0, %[control], c1, c0, 0" : [control] "=r" (control));
+    
+    /* Enable ARMv6 MMU features ( disable  sub - page AP ) */
+    control |= (1<<23) | (1 << 15) | (1 << 4) | 1;
+    /*  * Invalidate the translation lookaside buffer ( TLB ) */ 
+    __asm volatile ("mcr p15, 0, %[data], c8 , c7 , 0" : : [data] "r"  (0));
+    /* Write control register */ 
+    __asm volatile ("mcr p15, 0,  %[control], c1 , c0 , 0" : : [control] "r" (control));
 }
-void configure_mmu_C()
+void  configure_mmu_C()
 {
-	register unsigned int pt_addr = PAGE_TABLE_START_ADDR;
-	//total++;
-	/* Translation table 0 */
-	__asm volatile("mcr p15, 0, %[addr], c2, c0, 0" : : [addr] "r" (pt_addr));
-	/* Translation table 1 */
-	__asm volatile("mcr p15, 0, %[addr], c2, c0, 1" : : [addr] "r" (pt_addr));
-	/* Use translation table 0 for everything */
-	__asm volatile("mcr p15, 0, %[n], c2, c0, 2" : : [n] "r" (0));
-	/* Set Domain 0 ACL to "Manager", not enforcing memory permissions
-	* Every mapped section/page is in domain 0
-	*/
-	__asm volatile("mcr p15, 0, %[r], c3, c0, 0" : : [r] "r" (0x3));
+    register unsigned int pt_addr = PAGE_TABLE_START_ADDR;
+    //total++;
+    /* Translation table 0 */ 
+    __asm volatile ("mcr p15,  0, %[addr], c2 , c0 , 0" : : [addr] "r" (pt_addr));
+    /*  Translation able 1 */ 
+    __asm volatile ("mcr p15, 0, %[addr], c2 , c0 , 1" : : [addr] "r" (pt_addr));
+    /* Use  translation table 0 for everything */ 
+    __asm volatile ("mcr  p15, 0, %[n], c2 , c0 , 2" : : [n] "r" (0));
+    /* Set  Domain 0 ACL to " Manager ", not enforcing memory permissions *  
+     * Every mapped section / page is in domain 0 */ 
+    __asm volatile  ("mcr p15, 0, %[r], c3 , c0 , 0" : : [r] "r" (0x3));
 }
-
 
 uint32_t computePageAddr(int first_level_idx, int second_level_idx){
-	return (first_level_idx<<20)+(second_level_idx<<12);
+	return ((first_level_idx<<8)+(second_level_idx))<<12;
 }
 
 
 unsigned int init_kern_translation_table(void){
-	uint32_t device_flags = 0b00000111111;
+	uint32_t device_flags = 0b00000111110;
 	/*
 	Domain : 0 (Large page address : useless on raspPi)
 	P : 0 (??)
 	SBZ : Should Be Zero
 	NS : right in the middle of SBZ field on ARM doc
 	 */
-	uint32_t t1_flags = 0b0000001;
+	uint32_t t1_flags = 0b0000000001;
 	// Init first level tables
 	int i=0;
 	uint32_t* p;
@@ -78,7 +82,8 @@ unsigned int init_kern_translation_table(void){
 			uint32_t page_addr = computePageAddr(i,j);
 			if(page_addr < 0x500000)
 			{
-				*q = page_addr | 0b00000111110; 	// same as devices for the moment
+				//*q = page_addr<<12	 | 0b00000111110; 	// same as devices for the moment
+				*q = page_addr | 0b000001110010;
 			}
 			else if(page_addr > 0x20000000 && page_addr < 0x20FFFFFF )
 			{
@@ -93,7 +98,8 @@ unsigned int init_kern_translation_table(void){
 		}
 		
 		// Add entry to first level table
-		*p = (uint32_t)((SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE) | t1_flags);
+		uint32_t addr = (SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE);
+		*p = (uint32_t)((addr) | t1_flags);
 		i++;
 	}
 	
@@ -103,7 +109,7 @@ unsigned int init_kern_translation_table(void){
 void init_occupation_table(){
 	uint8_t* q;
 	int i=0;
-	for(q= (uint8_t*)OCCUPATION_TABLE_START_ADDR;; q< (uint8_t*)(OCCUPATION_TABLE_START_ADDR + OCCUPATION_TABLE_SIZE); q++)
+	for(q= (uint8_t*)OCCUPATION_TABLE_START_ADDR; q< (uint8_t*)(OCCUPATION_TABLE_START_ADDR + OCCUPATION_TABLE_SIZE); q++)
 	{
 		if(i<1133){	// address of the last occupied frame at init
 			*q = 1;
@@ -149,12 +155,61 @@ void* vMem_alloc(unsigned int nbPages)
 	return (void*)(page_number*4096);
 }
 
+unsigned int
+translate(unsigned int va)
+{
+  unsigned int pa; /* The result */
+
+  /* 1st and 2nd table addresses */
+  unsigned int table_base;
+  unsigned int second_level_table;
+
+  /* Indexes */
+  unsigned int first_level_index;
+  unsigned int second_level_index;
+  unsigned int page_index;
+  
+  /* Descriptors */
+  unsigned int first_level_descriptor;
+  unsigned int* first_level_descriptor_address;
+  unsigned int second_level_descriptor;
+  unsigned int* second_level_descriptor_address;
+
+  __asm("mrc p15, 0, %[tb], c2, c0, 0" : [tb] "=r"(table_base));
+  
+  table_base = table_base & 0xFFFFC000;
+  
+  /* Indexes*/
+  first_level_index = (va >> 20);
+  second_level_index = ((va << 12) >> 24);
+  page_index = (va & 0x00000FFF);
+
+  /* First level descriptor */
+  first_level_descriptor_address = (unsigned int*) (table_base | (first_level_index << 2));
+  first_level_descriptor = *(first_level_descriptor_address);
+
+  /* Second level descriptor */
+  second_level_table = first_level_descriptor & 0xFFFFFC00;
+  second_level_descriptor_address = (unsigned int*) (second_level_table | (second_level_index << 2));
+  second_level_descriptor = *((unsigned int*) second_level_descriptor_address);    
+
+  /* Physical address */
+  pa = (second_level_descriptor & 0xFFFFF000) | page_index;
+
+  return pa;
+}
+
+
 void init_mem()
 {	
 	void* alloc;
 	init_kern_translation_table();
 	init_occupation_table();
 	configure_mmu_C();
+	unsigned int pa = translate(0x48000);
+	pa = translate(0x87ec);
+	pa = translate(0x1);
+	pa = translate(0x8820);
 	start_mmu_C();
 	alloc = vMem_alloc(4);
 }

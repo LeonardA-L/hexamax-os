@@ -29,8 +29,8 @@ funcB()
 int
 kmain ( void )
 {
+	int a = 0xdeadbeef;
 	init_mem();
-	
 	init_hw();
 	create_process(funcB, NULL, STACK_SIZE);
 	create_process(funcA, NULL, STACK_SIZE);
