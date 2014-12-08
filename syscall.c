@@ -1,5 +1,6 @@
 #include "syscall.h"
 #include "sched.h"
+#include "hw.h"
 
 void __attribute__ ((naked)) SWIHandler ()
 {
@@ -29,6 +30,8 @@ void __attribute__ ((naked)) SWIHandler ()
 
 void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 
+	DISABLE_IRQ();
+
 	__asm("srsdb sp!, #0x13");
 	__asm("cps #0x13");
 
@@ -42,6 +45,8 @@ void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 	// SoftWare Interupt
 	__asm("SWI 0" : : : "lr");
 
+	set_tick_and_enable_timer();
+	ENABLE_IRQ();
 	__asm("rfeia sp!");
 }
 
