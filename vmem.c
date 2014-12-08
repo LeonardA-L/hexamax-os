@@ -207,9 +207,7 @@ void init_mem()
 	init_occupation_table();
 	configure_mmu_C();
 	unsigned int pa = translate(0x48000);
-	pa = translate(0x87ec);
-	pa = translate(0x1);
-	pa = translate(0x8820);
+	pa = translate(0x44c000);
 	start_mmu_C();
 	alloc = vMem_alloc(4);
 }
