@@ -229,4 +229,13 @@ void init_mem()
 	start_mmu_C();
 	alloc = vMem_alloc(4);
 	vMem_free(alloc,4);
+	uint32_t success = *((uint32_t*)10);
+	uint32_t failure = *((uint32_t*)-1);
+}
+
+void __attribute__ ((naked)) fdata_handler(){
+	volatile uint8_t dfsr;
+	__asm volatile("MRC p15, 0, %[DFSR], c5, c0, 0" : [DFSR] "=r" (dfsr));
+	
+	// Exit kernel
 }

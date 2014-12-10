@@ -53,7 +53,7 @@ hang: b hang
 undefined:	 b undefined
 ;@swi:	 b swi
 prefetch:	b prefetch
-data:	 b data
+;@data:	 b data
 unused:	b unused
 fiq:	b fiq
 
@@ -94,6 +94,9 @@ irq:
     b ctx_switch_from_irq
 swi:
 	b SWIHandler
+	
+data:
+	b fdata_handler
 ;@-------------------------------------------------------------------------
 ;@-------------------------------------------------------------------------
 
