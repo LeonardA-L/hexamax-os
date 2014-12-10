@@ -12,6 +12,13 @@ define pirqs
   end
 end
 
+define dlist
+	p *(current_process)
+	p *(current_process->next)
+	p *(current_process->next->next)
+end
+
+
 define pstack
   set $stack_pointer = current_ctx->ctx_stack + current_ctx->ctx_size
   set $i = 0

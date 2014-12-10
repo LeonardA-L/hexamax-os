@@ -1,14 +1,30 @@
 #include "sched.h"
 #include "hw.h"
 #include "vmem.h"
+#include "syscall.h"
+
+void funcC ()
+{
+	int cptC = 0;
+	while (1)
+	{
+		cptC++;
+	}
+}
 
 void
 funcA()
 {
 	int cptA = 0;
+	int waitDone = 0;
 	while ( 1 ) {
 		cptA ++;
-		//ctx_switch();
+		if (!waitDone && cptA%10 == 0) {
+			enum SYSCALL wait = WAIT;
+			doSysCall(wait, 3);
+			create_process_dynamically (funcC, NULL, STACK_SIZE, 0);
+			waitDone = 1;
+		}
 	}
 }
 
@@ -19,11 +35,11 @@ funcB()
 	int cptB = 1;
 	while ( 1 ) {
 		cptB += 2 ;
-		//ctx_switch();
 	}
-	//sched_exit();
+	//enum SYSCALL reboot = REBOOT;
+	//doSysCall(reboot, NULL);
+	sched_exit();
 }
-
 
 //------------------------------------------------------------------------
 int
@@ -32,8 +48,9 @@ kmain ( void )
 	int a = 0xdeadbeef;
 	init_mem();
 	init_hw();
-	create_process(funcB, NULL, STACK_SIZE);
-	create_process(funcA, NULL, STACK_SIZE);
+	init_sched();
+	create_process(funcB, NULL, STACK_SIZE, 1);
+	create_process(funcA, NULL, STACK_SIZE, 0);
 	start_sched();
 	while(1);
 	/* Pas atteignable vues nos 2 fonctions */

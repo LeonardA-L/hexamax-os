@@ -1,3 +1,5 @@
 *.o
 *.elf
 *.list
+kernel.hex
+kernel.img
