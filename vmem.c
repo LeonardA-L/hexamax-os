@@ -15,7 +15,7 @@
 #define SECOND_TABLE_START_ADDR (PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE)
 
 // #define OCCUPATION_TABLE_START_ADDR	(SECOND_TABLE_START_ADDR + (FIRST_LVL_TT_COUN+1)*SECON_LVL_TT_SIZE)
-#define OCCUPATION_TABLE_START_ADDR	 (TOTAL_TT_SIZE + PAGE_TABLE_START_ADDR)
+#define OCCUPATION_TABLE_START_ADDR	 (TOTAL_TT_SIZE + PAGE_TABLE_START_ADDR)	// 0x44c000
 #define OCCUPATION_TABLE_SIZE	(131072)
 
 
@@ -161,24 +161,35 @@ void* vMem_alloc(unsigned int nbPages)
 		*q = 1;
 	}
 	
-	return (void*)(page_number*4096);
+	return (void*)(page_number*PAGE_SIZE);
 }
 
+void vMem_free(void *ptr, unsigned int nbPage)
+{
+		uint32_t frame = ((uint32_t)ptr)/PAGE_SIZE;
+		uint32_t max = frame + nbPage;
+		for(; frame < max; frame++)
+		{
+			uint8_t* q= (uint8_t*)(OCCUPATION_TABLE_START_ADDR + frame);
+			*q = 0;
+		}
+}
+/*
 unsigned int
 translate(unsigned int va)
 {
-  unsigned int pa; /* The result */
+  unsigned int pa; // result
 
-  /* 1st and 2nd table addresses */
+  // Addresses
   unsigned int table_base;
   unsigned int second_level_table;
 
-  /* Indexes */
+  // Indexes 
   unsigned int first_level_index;
   unsigned int second_level_index;
   unsigned int page_index;
   
-  /* Descriptors */
+  // Descriptors 
   unsigned int first_level_descriptor;
   unsigned int* first_level_descriptor_address;
   unsigned int second_level_descriptor;
@@ -188,25 +199,25 @@ translate(unsigned int va)
   
   table_base = table_base & 0xFFFFC000;
   
-  /* Indexes*/
+  // Indexes 
   first_level_index = (va >> 20);
   second_level_index = ((va << 12) >> 24);
   page_index = (va & 0x00000FFF);
 
-  /* First level descriptor */
+  // First level descriptor
   first_level_descriptor_address = (unsigned int*) (table_base | (first_level_index << 2));
   first_level_descriptor = *(first_level_descriptor_address);
 
-  /* Second level descriptor */
+  // Second level descriptor
   second_level_table = first_level_descriptor & 0xFFFFFC00;
   second_level_descriptor_address = (unsigned int*) (second_level_table | (second_level_index << 2));
   second_level_descriptor = *((unsigned int*) second_level_descriptor_address);    
 
-  /* Physical address */
+  // Physical address 
   pa = (second_level_descriptor & 0xFFFFF000) | page_index;
 
   return pa;
-}
+}*/
 
 
 void init_mem()
@@ -215,8 +226,7 @@ void init_mem()
 	init_kern_translation_table();
 	init_occupation_table();
 	configure_mmu_C();
-	unsigned int pa = translate(0x48000);
-	pa = translate(0x44c000);
 	start_mmu_C();
 	alloc = vMem_alloc(4);
+	vMem_free(alloc,4);
 }
