@@ -68,22 +68,29 @@ unsigned int init_kern_translation_table(void){
 	 */
 	uint32_t t1_flags = 0b0000000001;
 	// Init first level tables
-	int i=0;
-	uint32_t* p;
-	for(p = (uint32_t*)PAGE_TABLE_START_ADDR; p< (uint32_t*)(PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE);p++)
+	int i;
+	uint32_t* p = (uint32_t*)PAGE_TABLE_START_ADDR;
+	
+	
+	//for(p = (uint32_t*)PAGE_TABLE_START_ADDR; p< (uint32_t*)(PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE);p++)
+	for(i=0; i<4096; i++)
 	{
 		// Init second level tables
-		int j=0;
-		uint32_t* q;
-		for(q= (uint32_t*)SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE; q< (uint32_t*)(SECOND_TABLE_START_ADDR + (i+1)*SECON_LVL_TT_SIZE); q++)
+		int j;
+		uint32_t* q= (uint32_t*)(SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE);
+		//for(q= (uint32_t*)SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE; q< (uint32_t*)(SECOND_TABLE_START_ADDR + (i+1)*SECON_LVL_TT_SIZE); q++)
+		for(j=0;j<256;j++)
 		{
 			
 			// Add entry to second level table
 			uint32_t page_addr = computePageAddr(i,j);
+			
+			
 			if(page_addr < 0x500000)
 			{
 				//*q = page_addr<<12	 | 0b00000111110; 	// same as devices for the moment
 				*q = page_addr | 0b000001110010;
+				
 			}
 			else if(page_addr > 0x20000000 && page_addr < 0x20FFFFFF )
 			{
@@ -94,13 +101,15 @@ unsigned int init_kern_translation_table(void){
 				// Translation fault
 				*q = 0;
 			}
-			j++;
+			//j++;
+			q++;
 		}
 		
 		// Add entry to first level table
 		uint32_t addr = (SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE);
 		*p = (uint32_t)((addr) | t1_flags);
-		i++;
+		//i++;
+		p++;
 	}
 	
 	return 0;
