@@ -110,6 +110,7 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 
 	init_pcb(newPcb, f, args, newStack, priority);
 	((struct pcb_s*)newPcb)->state = READY;
+	((struct pcb_s*)newPcb)->start_stack = newStack;
 }
 
 void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority)
@@ -134,6 +135,16 @@ void create_process_dynamically (func_t f, void* args, unsigned int stack_size, 
 	init_pcb(newPcb, f, args, newStack, priority);
 	((struct pcb_s*)newPcb)->next = current_process;
 	((struct pcb_s*)newPcb)->state = READY;
+	((struct pcb_s*)newPcb)->start_stack = newStack;
+}
+
+void copy_stack(struct pcb_s* pcbFrom, struct pcb_s* pcbTo)
+{
+	void* adr = NULL;
+	for(adr=pcbFrom->start_stack; adr!=pcbFrom->sp; adr-=2)
+	{
+		*((char*)pcbTo->start_stack + (adr-pcbFrom->start_stack) ) = *(char*)adr;
+	}
 }
 
 void start_current_process()
