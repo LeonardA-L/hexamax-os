@@ -147,6 +147,11 @@ void copy_stack(struct pcb_s* pcbFrom, struct pcb_s* pcbTo)
 	}
 }
 
+void fork()
+{
+	//copy_stack(current_process,current_process->next);
+}
+
 void start_current_process()
 {
 	__asm("bx %0" : : "r"(current_process->lr));		// Goto current process' lr

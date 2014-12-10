@@ -93,5 +93,5 @@ void sys_wait (unsigned int nbQuantums)
 
 void sys_fork()
 {
-	//fork();
+	fork();
 }
