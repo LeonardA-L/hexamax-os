@@ -19,9 +19,9 @@ funcA()
 	while ( cptA < 3 ) {
 		cptA ++;
 	}
-	enum SYSCALL wait = WAIT;
+	enum SYSCALL {wait = WAIT, exit = EXIT};
 	doSysCall(wait, 3);
-	sched_exit();
+	doSysCall(exit,0);
 }
 
 
@@ -34,7 +34,8 @@ funcB()
 	}
 	//enum SYSCALL reboot = REBOOT;
 	//doSysCall(reboot, NULL);
-	sched_exit();
+	enum SYSCALL {exit = EXIT};
+	doSysCall(exit,0);
 }
 
 //------------------------------------------------------------------------

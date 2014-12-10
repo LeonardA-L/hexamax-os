@@ -11,18 +11,21 @@ void __attribute__ ((naked)) SWIHandler ()
 	int function;
 	__asm("mov %0, r0" : "=r"(function));
 	
+	unsigned int param;
 	switch (function)
 	{
-	  	case REBOOT :
-			doSysCallReboot();
+	  case REBOOT :
+		doSysCallReboot();
 		break;
 
-		case WAIT :
-        {
-			unsigned int param;
-			__asm("mov %0, r1" : "=r"(param));
-			doSysCallWait(param);
-        }
+	  case WAIT :
+		__asm("mov %0, r1" : "=r"(param));
+		doSysCallWait(param);
+		break;
+		
+	  case EXIT :
+		__asm("mov %0, r1" : "=r"(param));
+		doSysCallExit(param);
 		break;
 	}
 	__asm("rfeia sp!");
@@ -38,9 +41,7 @@ void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 	// on stocke le numéro de l'appel système à executer
 	__asm("mov r0, %0" : : "r"(index));
 
-	if (param != 0x0) {
-		__asm("mov r1, %0" : : "r"(param));
-	}
+	__asm("mov r1, %0" : : "r"(param));
 
 	// SoftWare Interupt
 	__asm("SWI 0" : : : "lr");
@@ -50,17 +51,17 @@ void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 	__asm("rfeia sp!");
 }
 
-
+void __attribute__ ((naked)) doSysCallReboot () {
+	sys_reboot();
+}
 
 void doSysCallWait (unsigned int param) {
 	sys_wait(param);
 }
 
-void __attribute__ ((naked)) doSysCallReboot () {
-	sys_reboot();
+void doSysCallExit (unsigned int param) {
+	sys_exit(param);
 }
-
-
 
 void __attribute__ ((naked)) sys_reboot() {
 	const int PM_RSTC = 0x2010001c;
@@ -77,4 +78,8 @@ void __attribute__ ((naked)) sys_reboot() {
 void sys_wait (unsigned int nbQuantums) {
     // appeler le scheduler : changer l'état du process => WAITING + switch
 	waitAndSwitch(nbQuantums);
+}
+
+void sys_exit (unsigned int errorCode) {
+	exit_process(EXIT, errorCode);
 }

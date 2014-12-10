@@ -1,6 +1,7 @@
 #ifndef	SCHED_H
 #define SCHED_H
 
+#define MAX_PROCESS 1000
 #define STACK_SIZE	2000
 #define REGISTERS_SIZE	56
 #define	NULL	0x0
@@ -31,23 +32,19 @@ struct pcb_s {
 };
 
 void __attribute__ ((naked)) ctx_switch_from_irq();
-void __attribute__ ((naked)) ctx_switch_from_syscall();
-void __attribute__ ((naked)) ctx_switch();
+void __attribute__ ((naked)) ctx_switch_from_syscall(enum SYSCALL index, unsigned int param);
 void waitAndSwitch(unsigned int nbQuantum);
 
 void init_sched();
+void updateHighestPriority ();
 void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio);
 void create_process(func_t f, void* args, unsigned int stack_size, int priority);
+void terminate_process(struct pcb_s* pcb);
+void exit_process();
 
 void elect();
-void elect_with_wait();
 void elect_with_fixed_priority();
 
 void start_sched();
-
-void terminate_process();
-
-void sched_exit();
-
 
 #endif // SCHED_H
