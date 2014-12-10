@@ -1,5 +1,5 @@
 *.o
-kernel.elf
+*.elf
+*.list
 kernel.hex
 kernel.img
-kernel.list

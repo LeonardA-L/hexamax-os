@@ -1,5 +1,6 @@
 #include "sched.h"
 #include "hw.h"
+#include "vmem.h"
 #include "syscall.h"
 
 void funcC ()
@@ -44,6 +45,8 @@ funcB()
 int
 kmain ( void )
 {
+	int a = 0xdeadbeef;
+	init_mem();
 	init_hw();
 	init_sched();
 	create_process(funcB, NULL, STACK_SIZE, 1);
