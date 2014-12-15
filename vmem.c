@@ -18,7 +18,30 @@
 #define OCCUPATION_TABLE_START_ADDR	 (TOTAL_TT_SIZE + PAGE_TABLE_START_ADDR)	// 0x44c000
 #define OCCUPATION_TABLE_SIZE	(131072)
 
+#define	KERNEL_SPACE_MAX_ADDR	(0x500000)
 
+#define DEVICE_FIRST_TABLE_INDEX	(512)
+#define	LAST_KERNEL_FIRST_TABLE_INDEX	(KERNEL_SPACE_MAX_ADDR / PAGE_SIZE / SECON_LVL_TT_COUN)
+
+#define	PROCESS_ALLOCATED_MEMORY	(10*1024*1024)
+#define	PROCESS_SECOND_LVL_COUNT	(PROCESS_ALLOCATED_MEMORY / PAGE_SIZE +1)
+#define	PROCESS_SPACE_SIZE	(FIRST_LVL_TT_SIZE + PROCESS_ALLOCATED_MEMORY + PROCESS_SECOND_LVL_COUNT * SECON_LVL_TT_SIZE)
+
+#define	PROCESSES_SPACE_START	((PAGE_TABLE_START_ADDR) + TOTAL_TT_SIZE)
+
+uint32_t* process_space = (uint32_t*)PROCESSES_SPACE_START;
+
+uint32_t device_flags = 0b00000111110;
+/*
+	Domain : 0 (Large page address : useless on raspPi)
+	P : 0 (??)
+	SBZ : Should Be Zero
+	NS : right in the middle of SBZ field on ARM doc
+	 */
+uint32_t t1_flags = 0b0000000001;
+uint32_t memory_flags = 0b000001110010;
+	
+	
 void start_mmu_C()
 {
     register unsigned int control;
@@ -57,23 +80,83 @@ uint32_t computePageAddr(int first_level_idx, int second_level_idx){
 	return ((first_level_idx<<8)+(second_level_idx))<<12;
 }
 
+uint32_t computeProcessPageAddr(int first_level_idx, int second_level_idx, int nbCoarse, int memory_sizeKB, uint32_t* process_space_start){
+	
+	uint32_t memory_start = (uint32_t)process_space_start + FIRST_LVL_TT_SIZE + nbCoarse*SECON_LVL_TT_SIZE;
+	
+	return memory_start + (((first_level_idx<<8)+(second_level_idx))<<12);
+	
+}
+
+unsigned int init_process_memory_space(uint32_t* start, int memory_sizeKB)
+{
+	int nbFrames = memory_sizeKB/PAGE_SIZE +1;
+	int nbCoarse = nbFrames / SECON_LVL_TT_COUN +1;
+	
+	
+	// Init first level tables
+	int i;
+	uint32_t* p = start;
+	
+	
+	for(i=0; i<FIRST_LVL_TT_COUN; i++)
+	{
+		
+		// Add entry to first level table
+		uint32_t addr = ((((uint32_t)start)+FIRST_LVL_TT_SIZE) + i*SECON_LVL_TT_SIZE);
+		
+		if(i <= LAST_KERNEL_FIRST_TABLE_INDEX || i >= DEVICE_FIRST_TABLE_INDEX){
+			uint32_t kernel_table_addr = (SECOND_TABLE_START_ADDR + i*SECON_LVL_TT_SIZE);
+			*p = (uint32_t)((kernel_table_addr) | t1_flags);
+			p++;
+			continue;
+		}
+		else if(i > nbCoarse + LAST_KERNEL_FIRST_TABLE_INDEX && i < DEVICE_FIRST_TABLE_INDEX)	// between nbCoarse and first device frame
+		{
+			*p = 0;
+			p++;
+			continue;
+		}
+		else   // between 0x500000 and nbCoarse frames
+		{
+			*p = (uint32_t)((addr) | t1_flags);
+		}
+		
+		p++;
+		
+		
+		// Init second level tables
+		int j;
+		uint32_t* q= (uint32_t*)(addr);
+		for(j=0;j<SECON_LVL_TT_COUN;j++)
+		{
+			
+			// Add entry to second level table
+			uint32_t page_addr = computeProcessPageAddr(i,j,nbCoarse, memory_sizeKB, start);
+			
+			*q = page_addr | device_flags;
+			
+			q++;
+		}
+		
+		
+	}
+	
+	process_space += PROCESS_SPACE_SIZE / 4;
+	
+	return 0;
+}
 
 unsigned int init_kern_translation_table(void){
-	uint32_t device_flags = 0b00000111110;
-	/*
-	Domain : 0 (Large page address : useless on raspPi)
-	P : 0 (??)
-	SBZ : Should Be Zero
-	NS : right in the middle of SBZ field on ARM doc
-	 */
-	uint32_t t1_flags = 0b0000000001;
+	
+	
 	// Init first level tables
 	int i;
 	uint32_t* p = (uint32_t*)PAGE_TABLE_START_ADDR;
 	
 	
 	//for(p = (uint32_t*)PAGE_TABLE_START_ADDR; p< (uint32_t*)(PAGE_TABLE_START_ADDR+FIRST_LVL_TT_SIZE);p++)
-	for(i=0; i<4096; i++)
+	for(i=0; i<FIRST_LVL_TT_COUN; i++)
 	{
 		// Init second level tables
 		int j;
@@ -86,10 +169,11 @@ unsigned int init_kern_translation_table(void){
 			uint32_t page_addr = computePageAddr(i,j);
 			
 			
-			if(page_addr < 0x500000)
+			//if(page_addr < 0x500000)
+			if(page_addr < 0x20FFFFFF)
 			{
 				//*q = page_addr<<12	 | 0b00000111110; 	// same as devices for the moment
-				*q = page_addr | 0b000001110010;
+				*q = page_addr | memory_flags;
 				
 			}
 			else if(page_addr > 0x20000000 && page_addr < 0x20FFFFFF )
@@ -227,10 +311,11 @@ void init_mem()
 	init_occupation_table();
 	configure_mmu_C();
 	start_mmu_C();
-	alloc = vMem_alloc(4);
+	/*alloc = vMem_alloc(4);
 	vMem_free(alloc,4);
-	uint32_t success = *((uint32_t*)10);
-	uint32_t failure = *((uint32_t*)-1);
+	*/
+	init_process_memory_space(process_space,PROCESS_ALLOCATED_MEMORY);
+	init_process_memory_space(process_space,PROCESS_ALLOCATED_MEMORY);
 }
 
 void __attribute__ ((naked)) fdata_handler(){
@@ -238,4 +323,8 @@ void __attribute__ ((naked)) fdata_handler(){
 	__asm volatile("MRC p15, 0, %[DFSR], c5, c0, 0" : [DFSR] "=r" (dfsr));
 	
 	// Exit kernel
+	volatile int i=0;
+	for(;;){
+		i++;
+	}
 }
