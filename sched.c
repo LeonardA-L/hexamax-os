@@ -1,5 +1,7 @@
 #include "sched.h"
 #include "hw.h"
+#include "phyAlloc.h"
+#include "vmem.h"
 
 
 struct pcb_s* current_process;
@@ -10,6 +12,12 @@ int highest_priority; //retains the highest priority of the currently running pr
 void init_sched()
 {
 	highest_priority = LOW_PRIORITY;
+}
+
+
+void start_current_process()
+{
+	__asm("bx %0" : : "r"(current_process->lr));		// Goto current process' lr
 }
 
 void save_elect_restore()
@@ -85,12 +93,15 @@ void terminate_process(struct pcb_s* pcb)
 
 void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 {
+	unsigned int address_table = (unsigned int)allocate_new_process();
+	
+	
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
-	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
+	void* newStack = (void*)(phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1));
 	
 	//struct pcb_s newPcb;
 	int sizePcb = sizeof(struct pcb_s);
-	void* newPcb = phyAlloc_alloc(sizePcb);
+	void* newPcb = (void*)phyAlloc_alloc(sizePcb);
 	
 	if(priority < highest_priority)
 	{
@@ -111,12 +122,13 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 	init_pcb(newPcb, f, args, newStack, priority);
 	((struct pcb_s*)newPcb)->state = READY;
 	((struct pcb_s*)newPcb)->start_stack = newStack;
+	((struct pcb_s*)newPcb)->address_table = address_table;
 }
 
 void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority)
 {
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
-	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
+	void* newStack = (void*)(phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1));
 	
 	//struct pcb_s newPcb;
 	int sizePcb = sizeof(struct pcb_s);
@@ -152,10 +164,7 @@ void fork()
 	//copy_stack(current_process,current_process->next);
 }
 
-void start_current_process()
-{
-	__asm("bx %0" : : "r"(current_process->lr));		// Goto current process' lr
-}
+
 
 void elect_with_fixed_priority(){
 	while(1) {
@@ -196,6 +205,8 @@ void elect_with_wait()
 void elect()
 {
 	elect_with_wait();
+	
+	restart_mmu(current_process->address_table);
 }
 
 void waitAndSwitch(unsigned int nbQuantum)

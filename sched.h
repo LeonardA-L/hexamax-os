@@ -29,6 +29,7 @@ struct pcb_s {
 	struct pcb_s* next;		// The next process in the chained list
 	int priority;			//priority (for fixed-priority scheduler; ranges from -20 to +19)
 	void* start_stack;      // first adress of stack
+	unsigned int address_table;
 };
 
 void __attribute__ ((naked)) ctx_switch_from_irq();
