@@ -81,7 +81,7 @@ void terminate_process(struct pcb_s* pcb){
 }
 
 void exit_process(enum SYSCALL index, unsigned int errorCode) {
-	terminate_process(current_process);
+	//terminate_process(current_process); // fait dans le elect()
 	ctx_switch_from_syscall(index, errorCode);
 }
 

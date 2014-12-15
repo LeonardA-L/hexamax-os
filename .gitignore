@@ -1,5 +1,5 @@
 *.o
-kernel.elf
-kernel.hex
-kernel.img
-kernel.list
+*.elf
+*.hex
+*.img
+*.list

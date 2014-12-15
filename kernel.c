@@ -20,7 +20,7 @@ funcA()
 		cptA ++;
 	}
 	enum SYSCALL {wait = WAIT, exit = EXIT};
-	doSysCall(wait, 3);
+	doSysCall(wait, 1);
 	doSysCall(exit,0);
 }
 

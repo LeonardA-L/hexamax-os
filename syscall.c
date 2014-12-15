@@ -77,7 +77,7 @@ void __attribute__ ((naked)) sys_reboot() {
 
 void sys_wait (unsigned int nbQuantums) {
     // appeler le scheduler : changer l'état du process => WAITING + switch
-	waitAndSwitch(nbQuantums);
+	waitAndSwitch(WAIT, nbQuantums);
 }
 
 void sys_exit (unsigned int errorCode) {
