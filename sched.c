@@ -1,6 +1,5 @@
 #include "sched.h"
 #include "hw.h"
-#include "phyAlloc.h"
 #include "vmem.h"
 
 
@@ -76,8 +75,8 @@ void sched_exit()
 void terminate_process(struct pcb_s* pcb)
 {
 	// Unalloc
-	phyAlloc_free(pcb->sp -(STACK_SIZE-REGISTERS_SIZE-1), STACK_SIZE);		// Unalloc stack by reshifting its pointer to the original value
-	phyAlloc_free(pcb, sizeof(struct pcb_s));								// Unalloc pcb's memory
+	vMem_free(pcb->sp -(STACK_SIZE-REGISTERS_SIZE-1), STACK_SIZE);		// Unalloc stack by reshifting its pointer to the original value
+	vMem_free(pcb, sizeof(struct pcb_s));								// Unalloc pcb's memory
 	// Reloop
 	int highestPrio = LOW_PRIORITY;
 	struct pcb_s* p;
@@ -97,11 +96,11 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 	
 	
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
-	void* newStack = (void*)(phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1));
+	void* newStack = (void*)(vMem_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1));
 	
 	//struct pcb_s newPcb;
 	int sizePcb = sizeof(struct pcb_s);
-	void* newPcb = (void*)phyAlloc_alloc(sizePcb);
+	void* newPcb = (void*)vMem_alloc(sizePcb);
 	
 	if(priority < highest_priority)
 	{
@@ -128,11 +127,11 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority)
 {
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
-	void* newStack = (void*)(phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1));
+	void* newStack = (void*)(vMem_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1));
 	
 	//struct pcb_s newPcb;
 	int sizePcb = sizeof(struct pcb_s);
-	void* newPcb = phyAlloc_alloc(sizePcb);
+	void* newPcb = vMem_alloc(sizePcb);
 	
 	if(priority < highest_priority)
 	{
@@ -305,7 +304,7 @@ void start_sched()
 	
 	// Create a blank init process that will serve as entrance to the loop
 	int sizePcb = sizeof(struct pcb_s);
-	init_process = phyAlloc_alloc(sizePcb);
+	init_process = vMem_alloc(sizePcb);
 	init_process->next = first_process;
 	current_process = init_process;		// Set it as first process
 	

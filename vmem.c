@@ -49,7 +49,7 @@ void start_mmu_C()
     __asm volatile("cpsie i");
     
     __asm("mcr p15, 0, %[zero], c1 , c0 , 0" : : [zero] "r" (0)); // Disable cache 
-    __asm("mcr p15, 0, r0 , c7 , c7 , 0"); // Invalidate cache (  data and instructions ) */
+    __asm("mcr p15, 0, r0 , c7 , c7 , 0"); // Invalidate cache (  data and instructions )
     __asm("mcr p15, 0, r0 , c8 , c7 , 0"); // Invalidate TLB entries
     
     __asm volatile("mrc p15, 0, %[control], c1, c0, 0" : [control] "=r" (control));
@@ -313,8 +313,12 @@ void init_mem()
 	alloc = allocate_new_process();
 }
 
-void restart_mmu(register unsigned int pt_addr)
+void __attribute__ ((naked)) restart_mmu(register unsigned int pt_addr)
 {
+	__asm("mcr p15, 0, %[zero], c1 , c0 , 0" : : [zero] "r" (0)); // Disable cache 
+    __asm("mcr p15, 0, r0 , c7 , c7 , 0"); // Invalidate cache (  data and instructions )
+	__asm("mcr p15, 0, r0 , c8 , c7 , 0"); // Invalidate TLB entries
+	
 	configure_mmu_C(pt_addr);
 	start_mmu_C();
 }

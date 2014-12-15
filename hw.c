@@ -1,5 +1,4 @@
 #include "hw.h"
-#include "phyAlloc.h"
 #include "types.h"
 
 #define CS      0x20003000
@@ -83,5 +82,5 @@ init_hw()
 
     DISABLE_IRQ();
 
-    phyAlloc_init((void *) HEAP_START, 204800);
+    //phyAlloc_init((void *) HEAP_START, 204800);
 }
