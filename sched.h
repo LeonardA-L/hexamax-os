@@ -31,6 +31,7 @@ struct pcb_s {
 	unsigned long waitCounter;	// nb call this proc
 	struct pcb_s* next;		// The next process in the chained list
 	int priority;			//priority (for fixed-priority scheduler; ranges from -20 to +19)
+	void* start_stack;      // first adress of stack
 };
 
 void __attribute__ ((naked)) ctx_switch_from_irq();
@@ -43,6 +44,8 @@ void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio
 void create_process(func_t f, void* args, unsigned int stack_size, int priority);
 void terminate_process(struct pcb_s* pcb);
 void exit_process(enum SYSCALL index, unsigned int param);
+void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority);
+void copy_stack(struct pcb_s* pcbFrom, struct pcb_s* pcbTo);
 
 void elect();
 void elect_with_fixed_priority();

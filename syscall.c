@@ -51,7 +51,8 @@ void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param) {
 	__asm("rfeia sp!");
 }
 
-void __attribute__ ((naked)) doSysCallReboot () {
+void doSysCallReboot ()
+{
 	sys_reboot();
 }
 
@@ -63,7 +64,13 @@ void doSysCallExit (unsigned int param) {
 	sys_exit(param);
 }
 
-void __attribute__ ((naked)) sys_reboot() {
+void doSysCallFork()
+{
+	sys_fork();
+}
+
+void sys_reboot()
+{
 	const int PM_RSTC = 0x2010001c;
 	const int PM_WDOG = 0x20100024;
 	const int PM_PASSWORD = 0x5a000000;
@@ -75,11 +82,17 @@ void __attribute__ ((naked)) sys_reboot() {
 	while (1);
 }
 
-void sys_wait (unsigned int nbQuantums) {
+void sys_wait (unsigned int nbQuantums)
+{
     // appeler le scheduler : changer l'état du process => WAITING + switch
 	waitAndSwitch(WAIT, nbQuantums);
 }
 
 void sys_exit (unsigned int errorCode) {
 	exit_process(EXIT, errorCode);
+}
+
+void sys_fork()
+{
+	//fork();
 }

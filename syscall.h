@@ -2,19 +2,35 @@
 #define SYSCALL_H
 
 enum SYSCALL {
-	REBOOT, WAIT, EXIT
+	REBOOT, WAIT, EXIT, FORK
 };
 
 void __attribute__ ((naked)) doSysCall(enum SYSCALL index, unsigned int param);
 
-void __attribute__ ((naked)) doSysCallReboot ();
+void doSysCallReboot ();
 void doSysCallWait (unsigned int param); // params nbQuantums to add
 void doSysCallExit (unsigned int param);
+void doSysCallFork ();
 
-void __attribute__ ((naked)) sys_reboot();
+void sys_reboot();
 void sys_wait(unsigned int nbQuantums);
 void sys_exit(unsigned int errorCOde);
+void sys_fork();
 
 void __attribute__ ((naked)) SWIHandler ();
 
 #endif
+
+
+/*
+pid_t pid;
+
+if ((pid = fork()) == 0) {
+	// fils
+}
+else {
+	// père
+	// pid => pids du fils
+}
+// code commun
+*/

@@ -15,6 +15,7 @@ void init_sched()
 	current_process = NULL;
 }
 
+<<<<<<< HEAD
 void start_sched(){
 	// Create a blank init process
 	int sizePcb = sizeof(struct pcb_s);
@@ -23,12 +24,41 @@ void start_sched(){
 	init_process->next = current_process->next;
 	current_process->next = init_process;		// Set it as first process
 	current_process = init_process;
+=======
+void save_elect_restore()
+{
+	if(current_process->state != TERMINATED){
+		// Stack
+		__asm("push {r0-r12}");
+		// Store sp and lr
+		__asm("mov %0, sp" : "=r"(current_process->sp));
+		__asm("mov %0, lr" : "=r"(current_process->lr));
+	
+		current_process->state = WAITING;
+	}
+	
+	elect();
+	
+	current_process->state = RUNNING;
+	
+	// Restore sp
+	__asm("mov sp, %0" : : "r"(current_process->sp));
+	// Destack
+	__asm("pop {r0-r12}");
+}
+
+void __attribute__ ((naked)) ctx_switch()
+{
+	save_elect_restore();
+	start_current_process();
+>>>>>>> origin/process_isolation
 	
 	ENABLE_IRQ();
 	set_tick_and_enable_timer();
 }
 
-void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio){
+void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio)
+{
 	// init pcb's variables
 	pcb->lr = f;
 	pcb->function = f;
@@ -44,7 +74,37 @@ void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio
 	}
 }
 
+<<<<<<< HEAD
 void create_process(func_t f, void* args, unsigned int stack_size, int priority){
+=======
+void sched_exit()
+{
+	current_process -> state = TERMINATED;
+	//ctx_switch();
+	elect();
+}
+
+void terminate_process(struct pcb_s* pcb)
+{
+	// Unalloc
+	phyAlloc_free(pcb->sp -(STACK_SIZE-REGISTERS_SIZE-1), STACK_SIZE);		// Unalloc stack by reshifting its pointer to the original value
+	phyAlloc_free(pcb, sizeof(struct pcb_s));								// Unalloc pcb's memory
+	// Reloop
+	int highestPrio = LOW_PRIORITY;
+	struct pcb_s* p;
+	for(p = pcb; p->next != pcb; p = p->next)
+	{
+		if (highestPrio>p->priority) {
+			highestPrio = p->priority;
+		}
+	}
+	highest_priority=highestPrio;
+	p->next = pcb->next;
+}
+
+void create_process(func_t f, void* args, unsigned int stack_size, int priority)
+{
+>>>>>>> origin/process_isolation
 	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
 	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
 	
@@ -67,8 +127,10 @@ void create_process(func_t f, void* args, unsigned int stack_size, int priority)
 		current_process->next = newPcb;
 	}
 	((struct pcb_s*)newPcb)->state = READY;
+	((struct pcb_s*)newPcb)->start_stack = newStack;
 }
 
+<<<<<<< HEAD
 void terminate_process(struct pcb_s* pcb){
 	// Unalloc
 	phyAlloc_free(pcb->sp -(STACK_SIZE-REGISTERS_SIZE-1), STACK_SIZE);		// Unalloc stack by reshifting its pointer to the original value
@@ -86,6 +148,44 @@ void exit_process(enum SYSCALL index, unsigned int errorCode) {
 }
 
 void start_current_process(){
+=======
+void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority)
+{
+	// Alloc a new stack space, shift the pointer to the end minus the registers we will pop, minus one because it's the last address
+	void* newStack = phyAlloc_alloc(stack_size)+(stack_size-REGISTERS_SIZE-1);
+	
+	//struct pcb_s newPcb;
+	int sizePcb = sizeof(struct pcb_s);
+	void* newPcb = phyAlloc_alloc(sizePcb);
+	
+	if(priority < highest_priority)
+	{
+		highest_priority = priority;
+	}
+	
+	//TODO :parse the PCB list for individual processes priority and insert the newly created process in the list
+	struct pcb_s* p;		
+	for(p = current_process; p->next != current_process; p = p->next);
+	p->next = newPcb;
+
+	init_pcb(newPcb, f, args, newStack, priority);
+	((struct pcb_s*)newPcb)->next = current_process;
+	((struct pcb_s*)newPcb)->state = READY;
+	((struct pcb_s*)newPcb)->start_stack = newStack;
+}
+
+void copy_stack(struct pcb_s* pcbFrom, struct pcb_s* pcbTo)
+{
+	void* adr = NULL;
+	for(adr=pcbFrom->start_stack; adr!=pcbFrom->sp; adr-=2)
+	{
+		*((char*)pcbTo->start_stack + (adr-pcbFrom->start_stack) ) = *(char*)adr;
+	}
+}
+
+void start_current_process()
+{
+>>>>>>> origin/process_isolation
 	__asm("bx %0" : : "r"(current_process->lr));		// Goto current process' lr
 }
 
@@ -125,20 +225,60 @@ void elect_with_fixed_priority(){
 		}
 		current_process = current_process->next;
 
+<<<<<<< HEAD
 		if (current_process->priority == highest_priority) {
 			if (current_process->state == READY) {
 				break;
 			}
+=======
+void elect_with_wait()
+{
+	if (current_process->next->state == TERMINATED) {
+		terminate_process(current_process->next);
+	}
+	current_process = current_process->next;			// Elect a new process (i.e the next in the list)
+
+	while(current_process->state == WAITING){
+		(current_process->waitCounter)--;
+		if (current_process->waitCounter == 0) {
+			current_process->waitCounter = 0;
+			current_process->state = READY;
+			break;
+		}
+		else if (current_process->waitCounter == -1) {
+			current_process->waitCounter = 0;
+			break;
+		}
+		else {
+			current_process = current_process->next;
+>>>>>>> origin/process_isolation
 		}
 	}
 }
 
+<<<<<<< HEAD
 void waitAndSwitch(enum SYSCALL index, unsigned int nbQuantum) {
 	current_process->waitCounter = clockTicks+nbQuantum;
 	ctx_switch_from_syscall(index, nbQuantum);
 }
 
 void __attribute__ ((naked)) ctx_switch_from_irq(){
+=======
+void elect()
+{
+	elect_with_wait();
+}
+
+void waitAndSwitch(unsigned int nbQuantum)
+{
+	current_process->waitCounter = nbQuantum;
+	ctx_switch_from_syscall();
+}
+
+
+void __attribute__ ((naked)) ctx_switch_from_irq()
+{
+>>>>>>> origin/process_isolation
 	DISABLE_IRQ();
 	
 	__asm("sub lr, lr, #4");
@@ -174,7 +314,12 @@ void __attribute__ ((naked)) ctx_switch_from_irq(){
 	}
 }
 
+<<<<<<< HEAD
 void __attribute__ ((naked)) ctx_switch_from_syscall(enum SYSCALL index, unsigned int param) {
+=======
+void __attribute__ ((naked)) ctx_switch_from_syscall()
+{
+>>>>>>> origin/process_isolation
 	DISABLE_IRQ();
 	
 	// Stack
@@ -209,4 +354,26 @@ void __attribute__ ((naked)) ctx_switch_from_syscall(enum SYSCALL index, unsigne
 	else{
 		start_current_process();
 	}
+<<<<<<< HEAD
+=======
+	
+}
+
+
+void start_sched()
+{
+	// Loop the chained list of process
+	struct pcb_s* p;
+	for(p = first_process; p->next != NULL; p = p->next);
+	p->next = first_process;
+	
+	// Create a blank init process that will serve as entrance to the loop
+	int sizePcb = sizeof(struct pcb_s);
+	init_process = phyAlloc_alloc(sizePcb);
+	init_process->next = first_process;
+	current_process = init_process;		// Set it as first process
+	
+	ENABLE_IRQ();
+	set_tick_and_enable_timer();
+>>>>>>> origin/process_isolation
 }

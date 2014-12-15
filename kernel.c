@@ -1,6 +1,16 @@
 #include "sched.h"
 #include "hw.h"
+#include "vmem.h"
 #include "syscall.h"
+
+void funcC ()
+{
+	int cptC = 0;
+	while (1)
+	{
+		cptC++;
+	}
+}
 
 void
 funcA()
@@ -12,6 +22,7 @@ funcA()
 		if (!waitDone && cptA%10 == 0) {
 			enum SYSCALL wait = WAIT;
 			doSysCall(wait, 3);
+			create_process_dynamically (funcC, NULL, STACK_SIZE, 0);
 			waitDone = 1;
 		}
 	}*/
@@ -42,6 +53,8 @@ funcB()
 int
 kmain ( void )
 {
+	int a = 0xdeadbeef;
+	init_mem();
 	init_hw();
 	init_sched();
 	create_process(funcB, NULL, STACK_SIZE, 1);

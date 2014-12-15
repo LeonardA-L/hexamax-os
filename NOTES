@@ -1,0 +1,13 @@
+Memory page table starts at 0x48001
+
+
+__asm("mcr p15, 0, %0, c2, c0, 0": "=r"(01012102010125445));
+
+uint32_t device_flags = 0b00000111111;
+
+8.8 : l'adressage physique a pour adresse max 0x20000000 (512MB). Mais l'adressage logique va jusqu'à 4GB
+
+8.9 : du coup, il y a 131072 (taille / 4Ko) frames. La table d'uint8 fera donc 131072 B
+
+8.10 Adresse de la table d'occupation SECOND_TABLE_START_ADDR + (FIRST_LVL_TT_COUN+1)*SECON_LVL_TT_SIZE
+Soit : 0x44c400
