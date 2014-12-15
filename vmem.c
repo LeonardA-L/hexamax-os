@@ -61,9 +61,8 @@ void start_mmu_C()
     /* Write control register */ 
     __asm volatile ("mcr p15, 0,  %[control], c1 , c0 , 0" : : [control] "r" (control));
 }
-void  configure_mmu_C()
+void  configure_mmu_C(register unsigned int pt_addr)
 {
-    register unsigned int pt_addr = PAGE_TABLE_START_ADDR;
     //total++;
     /* Translation table 0 */ 
     __asm volatile ("mcr p15,  0, %[addr], c2 , c0 , 0" : : [addr] "r" (pt_addr));
@@ -88,7 +87,7 @@ uint32_t computeProcessPageAddr(int first_level_idx, int second_level_idx, int n
 	
 }
 
-unsigned int init_process_memory_space(uint32_t* start, int memory_sizeKB)
+void* init_process_memory_space(uint32_t* start, int memory_sizeKB)
 {
 	int nbFrames = memory_sizeKB/PAGE_SIZE +1;
 	int nbCoarse = nbFrames / SECON_LVL_TT_COUN +1;
@@ -144,7 +143,7 @@ unsigned int init_process_memory_space(uint32_t* start, int memory_sizeKB)
 	
 	process_space += PROCESS_SPACE_SIZE / 4;
 	
-	return 0;
+	return (void*)(start);
 }
 
 unsigned int init_kern_translation_table(void){
@@ -309,13 +308,15 @@ void init_mem()
 	void* alloc;
 	init_kern_translation_table();
 	init_occupation_table();
-	configure_mmu_C();
+	configure_mmu_C(PAGE_TABLE_START_ADDR);
 	start_mmu_C();
-	/*alloc = vMem_alloc(4);
-	vMem_free(alloc,4);
-	*/
-	init_process_memory_space(process_space,PROCESS_ALLOCATED_MEMORY);
-	init_process_memory_space(process_space,PROCESS_ALLOCATED_MEMORY);
+	alloc = allocate_new_process();
+}
+
+void restart_mmu(register unsigned int pt_addr)
+{
+	configure_mmu_C(pt_addr);
+	start_mmu_C();
 }
 
 void __attribute__ ((naked)) fdata_handler(){
@@ -327,4 +328,8 @@ void __attribute__ ((naked)) fdata_handler(){
 	for(;;){
 		i++;
 	}
+}
+
+void* allocate_new_process(){
+	return init_process_memory_space(process_space,PROCESS_ALLOCATED_MEMORY);
 }
