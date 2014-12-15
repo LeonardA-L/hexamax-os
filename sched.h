@@ -41,6 +41,7 @@ void init_pcb(struct pcb_s* pcb, func_t f, struct arg_s* arg, void* sp, int prio
 void create_process(func_t f, void* args, unsigned int stack_size, int priority);
 void create_process_dynamically (func_t f, void* args, unsigned int stack_size, int priority);
 void copy_stack(struct pcb_s* pcbFrom, struct pcb_s* pcbTo);
+void fork();
 
 void elect();
 void elect_with_wait();
